@@ -2,6 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "start simulator",
+      "type": "shell",
+      "command": "emulator -avd id6_pixel",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "start-dev",
       "type": "shell",
       "command": "./gradlew installDebug && adb shell am force-stop com.id6assistant.wazedispatcher && adb shell am start -n com.id6assistant.wazedispatcher/.MainActivity",

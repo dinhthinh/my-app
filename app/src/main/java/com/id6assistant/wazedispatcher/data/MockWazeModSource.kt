@@ -55,7 +55,7 @@ data class MockSimulatorState(
 }
 
 data class MockScenarioConfig(
-    val navigating: Boolean = true,
+    val navigating: Boolean = false,
     val speed: Int = 64,
     val speedLimit: Int = 60,
     val speedMin: Int = 30,

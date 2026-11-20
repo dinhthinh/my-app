@@ -224,53 +224,6 @@ fun DashboardScreen(
                 }
             }
 
-            // Navigation & Lanes Card
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFF1E293B), RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = if (snap.navigating) "Dẫn đường đang hoạt động" else "Không dẫn đường",
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = if (snap.navigating) {
-                        "Rẽ (turn=${snap.turn}) sau ${snap.turnDistanceM} m · ${snap.nextStreet.ifBlank { snap.currentStreet }}"
-                    } else {
-                        snap.currentStreet.ifBlank { "Chờ dữ liệu tuyến đường..." }
-                    },
-                    color = Color(0xFFF8FAFC),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                if (snap.lanes.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        snap.lanes.forEachIndexed { idx, lane ->
-                            val highlighted = lane.recommended != 0
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        if (highlighted) Color(0xFF2563EB) else Color(0xFF334155),
-                                        RoundedCornerShape(6.dp),
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            ) {
-                                Text(
-                                    text = "L${idx + 1}:0x${lane.directions.toString(16)}",
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
             // Average Speed Zone
             if (snap.avgZone) {
                 Column(
