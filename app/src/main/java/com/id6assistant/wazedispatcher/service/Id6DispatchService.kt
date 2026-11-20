@@ -165,7 +165,7 @@ class Id6DispatchService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("ID6 Waze Dispatcher")
+            .setContentTitle("RoadCast ID6")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_directions)
             .setContentIntent(openIntent)

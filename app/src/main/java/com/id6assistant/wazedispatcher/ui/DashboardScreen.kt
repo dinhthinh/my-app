@@ -97,7 +97,7 @@ fun DashboardScreen(
             ) {
                 Column {
                     Text(
-                        text = "ID6 WazeMod Dispatcher",
+                        text = "RoadCast ID6",
                         color = Color(0xFFF8FAFC),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,

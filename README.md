@@ -1,4 +1,4 @@
-# ID6 WazeMod Dispatcher
+# RoadCast ID6
 
 Ứng dụng Android (Kotlin + Jetpack Compose) đóng vai trò cầu nối telemetry giữa **WazeMod (V14+)** (hoặc **Mock Simulator** tích hợp) và hệ thống hiển thị **BMW ID6 / 6WA / HUD** qua giao thức nhị phân TCP (mặc định cổng `9090`).
 
