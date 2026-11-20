@@ -45,8 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.id6assistant.wazedispatcher.data.AlertCategory
-import com.id6assistant.wazedispatcher.data.MockScenarioConfig
-import com.id6assistant.wazedispatcher.data.WazeAlert
+import com.id6assistant.wazedispatcher.data.MockSimulatorState
 import com.id6assistant.wazedispatcher.data.WazeAlertCatalog
 import com.id6assistant.wazedispatcher.data.WazeSourceStatus
 import com.id6assistant.wazedispatcher.service.DispatcherUiState
@@ -59,7 +58,12 @@ fun DashboardScreen(
     onToggleRunning: () -> Unit,
     onSelectMode: (TelemetrySourceMode) -> Unit,
     onUpdateTarget: (String, Int) -> Unit,
-    onUpdateMock: ((MockScenarioConfig) -> MockScenarioConfig) -> Unit,
+    onUpdateMockSimulator: (autoSendEligible: Boolean, (MockSimulatorState) -> MockSimulatorState) -> Unit,
+    onSendSli: () -> Unit,
+    onSendLane: () -> Unit,
+    onSendCombined: () -> Unit,
+    onSendNav: () -> Unit,
+    onClearNav: () -> Unit,
     onRequestWazeAccess: () -> Unit,
     onClearLogs: () -> Unit,
 ) {
@@ -345,56 +349,17 @@ fun DashboardScreen(
                 }
             }
 
-            // Mock Controls
+            // Mock Simulator (Web-style 4-section simulator)
             if (state.sourceMode == TelemetrySourceMode.MOCK_SIMULATOR) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1E293B), RoundedCornerShape(16.dp))
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text("Mock Scenario Controls", color = Color(0xFFF8FAFC), fontWeight = FontWeight.SemiBold)
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        listOf(40, 60, 80, 100).forEach { lim ->
-                            FilterChip(
-                                selected = state.mockConfig.speedLimit == lim,
-                                onClick = {
-                                    onUpdateMock { it.copy(speedLimit = lim, overspeed = it.speed > lim) }
-                                },
-                                label = { Text("${lim} km/h") },
-                            )
-                        }
-                        FilterChip(
-                            selected = state.mockConfig.overspeed,
-                            onClick = { onUpdateMock { it.copy(overspeed = !it.overspeed) } },
-                            label = { Text("Overspeed") },
-                        )
-                        FilterChip(
-                            selected = state.mockConfig.alerts.any { it.type == 9 },
-                            onClick = {
-                                onUpdateMock { cfg ->
-                                    val hasNpi = cfg.alerts.any { it.type == 9 }
-                                    val updated = if (hasNpi) {
-                                        cfg.alerts.filterNot { it.type == 9 }
-                                    } else {
-                                        listOf(WazeAlert(type = 9, distanceM = 120)) + cfg.alerts.take(2)
-                                    }
-                                    cfg.copy(alerts = updated)
-                                }
-                            },
-                            label = { Text("Cấm vượt (9)") },
-                        )
-                        FilterChip(
-                            selected = state.mockConfig.navigating,
-                            onClick = { onUpdateMock { it.copy(navigating = !it.navigating) } },
-                            label = { Text("NAV Active") },
-                        )
-                    }
-                }
+                MockSimulatorPanel(
+                    sim = state.mockSimulator,
+                    onUpdate = onUpdateMockSimulator,
+                    onSendSli = onSendSli,
+                    onSendLane = onSendLane,
+                    onSendCombined = onSendCombined,
+                    onSendNav = onSendNav,
+                    onClearNav = onClearNav,
+                )
             }
 
             PacketLogPanel(

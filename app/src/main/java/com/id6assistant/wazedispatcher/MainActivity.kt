@@ -10,12 +10,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.lifecycleScope
 import com.id6assistant.wazedispatcher.data.WazeModAidlClient
+import com.id6assistant.wazedispatcher.dispatch.Id6TcpDispatcher
+import com.id6assistant.wazedispatcher.dispatch.PacketLogEntry
 import com.id6assistant.wazedispatcher.service.DispatcherRepository
 import com.id6assistant.wazedispatcher.service.Id6DispatchService
 import com.id6assistant.wazedispatcher.ui.DashboardScreen
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private val manualDispatcher = Id6TcpDispatcher()
     private val accessLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -58,8 +63,38 @@ class MainActivity : ComponentActivity() {
                             Id6DispatchService.startOrReload(this)
                         }
                     },
-                    onUpdateMock = { transform ->
-                        DispatcherRepository.updateMockConfig(transform)
+                    onUpdateMockSimulator = { autoSendEligible, transform ->
+                        DispatcherRepository.updateMockSimulator(transform)
+                        val updated = DispatcherRepository.state.value
+                        if (autoSendEligible && updated.mockSimulator.autoSendCombined) {
+                            sendManualPacket {
+                                manualDispatcher.sendCombinedPacket(
+                                    updated.mockSimulator.toSliInput(),
+                                    updated.mockSimulator.toLaneInput(),
+                                )
+                            }
+                        }
+                    },
+                    onSendSli = {
+                        val sim = DispatcherRepository.state.value.mockSimulator
+                        sendManualPacket { manualDispatcher.sendSliPacket(sim.toSliInput()) }
+                    },
+                    onSendLane = {
+                        val sim = DispatcherRepository.state.value.mockSimulator
+                        sendManualPacket { manualDispatcher.sendLanePacket(sim.toLaneInput()) }
+                    },
+                    onSendCombined = {
+                        val sim = DispatcherRepository.state.value.mockSimulator
+                        sendManualPacket {
+                            manualDispatcher.sendCombinedPacket(sim.toSliInput(), sim.toLaneInput())
+                        }
+                    },
+                    onSendNav = {
+                        val sim = DispatcherRepository.state.value.mockSimulator
+                        sendManualPacket { manualDispatcher.sendNavPacket(sim.toNavInput(active = true)) }
+                    },
+                    onClearNav = {
+                        sendManualPacket { manualDispatcher.clearNav() }
                     },
                     onRequestWazeAccess = {
                         val intent = Intent(WazeModAidlClient.ACTION_REQUEST_ACCESS)
@@ -70,6 +105,16 @@ class MainActivity : ComponentActivity() {
                     },
                 )
             }
+        }
+    }
+
+    private fun sendManualPacket(block: suspend () -> PacketLogEntry) {
+        val current = DispatcherRepository.state.value
+        manualDispatcher.host = current.targetHost
+        manualDispatcher.port = current.targetPort
+        lifecycleScope.launch {
+            val entry = block()
+            DispatcherRepository.appendLogs(listOf(entry))
         }
     }
 }

@@ -2,6 +2,7 @@ package com.id6assistant.wazedispatcher.dispatch
 
 import com.id6assistant.sdk.Id6Bits
 import com.id6assistant.sdk.Id6ProtocolCodec
+import com.id6assistant.sdk.LaneInput
 import com.id6assistant.sdk.NavInput
 import com.id6assistant.sdk.SliInput
 import kotlinx.coroutines.CoroutineDispatcher
@@ -97,6 +98,40 @@ class Id6TcpDispatcher(
         val hex = Id6ProtocolCodec.toHexString(blankBytes)
         lastSliHex = hex
         return sendFrame("0x01 SLI_CLR", blankBytes, hex)
+    }
+
+    suspend fun sendSliPacket(sli: SliInput): PacketLogEntry {
+        val bytes = Id6ProtocolCodec.encodeSliPacket(sli)
+        val hex = Id6ProtocolCodec.toHexString(bytes)
+        val entry = sendFrame("0x01 SLI", bytes, hex)
+        if (entry.success) {
+            lastSliHex = hex
+        }
+        return entry
+    }
+
+    suspend fun sendLanePacket(lane: LaneInput): PacketLogEntry {
+        val bytes = Id6ProtocolCodec.encodeLanePacket(lane)
+        val hex = Id6ProtocolCodec.toHexString(bytes)
+        return sendFrame("0x02 LANE", bytes, hex)
+    }
+
+    suspend fun sendCombinedPacket(sli: SliInput, lane: LaneInput): PacketLogEntry {
+        val bytes = Id6ProtocolCodec.encodeCombinedPacket(sli, lane)
+        val hex = Id6ProtocolCodec.toHexString(bytes)
+        return sendFrame("0x03 COMBINED", bytes, hex)
+    }
+
+    suspend fun sendNavPacket(nav: NavInput): PacketLogEntry {
+        val bytes = Id6ProtocolCodec.encodeNavPacket(nav)
+        val hex = Id6ProtocolCodec.toHexString(bytes)
+        val label = if (nav.active) "0x04 NAV" else "0x04 NAV_CLR"
+        val entry = sendFrame(label, bytes, hex)
+        if (entry.success) {
+            lastNavSentMs = clockMs()
+            lastNavActive = nav.active
+        }
+        return entry
     }
 
     private suspend fun sendFrame(

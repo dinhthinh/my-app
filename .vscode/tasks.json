@@ -1,0 +1,98 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start-dev",
+      "type": "shell",
+      "command": "./gradlew installDebug && adb shell am force-stop com.id6assistant.wazedispatcher && adb shell am start -n com.id6assistant.wazedispatcher/.MainActivity",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "start-dev: test + reload",
+      "type": "shell",
+      "command": "./gradlew testDebugUnitTest installDebug && adb shell am force-stop com.id6assistant.wazedispatcher && adb shell am start -n com.id6assistant.wazedispatcher/.MainActivity",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: debug",
+      "type": "shell",
+      "command": "./gradlew assembleDebug",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: production",
+      "type": "shell",
+      "command": "./gradlew assembleRelease",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: test",
+      "type": "shell",
+      "command": "./gradlew test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "adb: reload app",
+      "type": "shell",
+      "command": "adb shell am force-stop com.id6assistant.wazedispatcher && adb shell am start -n com.id6assistant.wazedispatcher/.MainActivity",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "adb: logcat",
+      "type": "shell",
+      "command": "adb logcat -v time --pid=$(adb shell pidof -s com.id6assistant.wazedispatcher)",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "./gradlew clean",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

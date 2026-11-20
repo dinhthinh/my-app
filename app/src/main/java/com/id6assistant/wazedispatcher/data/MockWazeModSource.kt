@@ -1,8 +1,58 @@
 package com.id6assistant.wazedispatcher.data
 
+import com.id6assistant.sdk.Id6Bits
+import com.id6assistant.sdk.LaneInput
+import com.id6assistant.sdk.NavInput
+import com.id6assistant.sdk.SliInput
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+
+data class MockSimulatorState(
+    // 3. Traffic Sign Simulator (0x01)
+    val maxSpeedKmh: Int = 60,
+    val minSpeedKmh: Int = 0,
+    val overspeedBlink: Boolean = false,
+    val noPassingSign: Boolean = false,
+    // 4. ADAS Lane & Distance Simulator (0x02)
+    val laneActive: Boolean = true,
+    val leftLaneWarn: Boolean = false,
+    val rightLaneWarn: Boolean = false,
+    val distWarn: Boolean = false,
+    val distM: Int = 150,
+    // Combined 7-Byte Frame
+    val autoSendCombined: Boolean = false,
+    // Turn-by-Turn Navigation Simulator (0x04)
+    val navManeuver: Int = Id6Bits.ID6_NAV_MANEUVER_LEFT,
+    val navDistanceM: Long = 250L,
+    val navRoundaboutExit: Int = 0,
+    val navAngleDeg: Int = 0,
+    val navStreet: String = "Nguyen Van Linh",
+) {
+    fun toSliInput(): SliInput = SliInput(
+        limitKmh = maxSpeedKmh.coerceIn(0, Id6Bits.ID6_SPEED_MAX_VALID),
+        minKmh = minSpeedKmh.coerceIn(0, Id6Bits.ID6_SPEED_MAX_VALID),
+        overspeed = overspeedBlink,
+        noPassing = noPassingSign,
+    )
+
+    fun toLaneInput(): LaneInput = LaneInput(
+        active = laneActive,
+        leftWarn = leftLaneWarn,
+        rightWarn = rightLaneWarn,
+        distWarn = distWarn,
+        distanceM = if (distM in 1..Id6Bits.ID6_DIST_MAX_VALID) distM else 0,
+    )
+
+    fun toNavInput(active: Boolean = true): NavInput = NavInput(
+        active = active,
+        maneuver = navManeuver,
+        distanceM = maxOf(0L, navDistanceM),
+        roundaboutExit = navRoundaboutExit.coerceIn(0, 15),
+        roundaboutAngleDeg = navAngleDeg.coerceIn(-360, 360),
+        street = navStreet,
+    )
+}
 
 data class MockScenarioConfig(
     val navigating: Boolean = true,

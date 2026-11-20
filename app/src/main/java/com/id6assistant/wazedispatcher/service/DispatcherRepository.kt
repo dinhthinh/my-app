@@ -1,6 +1,8 @@
 package com.id6assistant.wazedispatcher.service
 
 import com.id6assistant.wazedispatcher.data.MockScenarioConfig
+import com.id6assistant.wazedispatcher.data.MockSimulatorState
+import com.id6assistant.wazedispatcher.data.WazeAlert
 import com.id6assistant.wazedispatcher.data.WazeModSnapshot
 import com.id6assistant.wazedispatcher.data.WazeSourceStatus
 import com.id6assistant.wazedispatcher.dispatch.PacketLogEntry
@@ -23,6 +25,7 @@ data class DispatcherUiState(
     val targetPort: Int = 9090,
     val snapshot: WazeModSnapshot = WazeModSnapshot(),
     val mockConfig: MockScenarioConfig = MockScenarioConfig(),
+    val mockSimulator: MockSimulatorState = MockSimulatorState(),
     val packetLogs: List<PacketLogEntry> = emptyList(),
 )
 
@@ -44,6 +47,30 @@ object DispatcherRepository {
 
     fun updateMockConfig(transform: (MockScenarioConfig) -> MockScenarioConfig) {
         _state.update { it.copy(mockConfig = transform(it.mockConfig)) }
+    }
+
+    fun updateMockSimulator(transform: (MockSimulatorState) -> MockSimulatorState) {
+        _state.update { current ->
+            val nextSim = transform(current.mockSimulator)
+            val baseAlerts = current.mockConfig.alerts.filterNot { it.type == 9 }
+            val syncedAlerts = if (nextSim.noPassingSign) {
+                listOf(WazeAlert(type = 9, distanceM = 120)) + baseAlerts.take(2)
+            } else {
+                baseAlerts
+            }
+            current.copy(
+                mockSimulator = nextSim,
+                mockConfig = current.mockConfig.copy(
+                    speedLimit = nextSim.maxSpeedKmh,
+                    speedMin = nextSim.minSpeedKmh,
+                    overspeed = nextSim.overspeedBlink,
+                    turnDistanceM = nextSim.navDistanceM.toInt().coerceAtLeast(0),
+                    roundaboutExit = nextSim.navRoundaboutExit,
+                    nextStreet = nextSim.navStreet,
+                    alerts = syncedAlerts,
+                ),
+            )
+        }
     }
 
     fun updateStatus(status: WazeSourceStatus, message: String?) {

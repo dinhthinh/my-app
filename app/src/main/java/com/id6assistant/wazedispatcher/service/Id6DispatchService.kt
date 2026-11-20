@@ -39,6 +39,7 @@ class Id6DispatchService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundCompat()
         when (intent?.action) {
             ACTION_STOP -> {
                 stopDispatching()
@@ -50,7 +51,6 @@ class Id6DispatchService : Service() {
                 return START_STICKY
             }
             else -> {
-                startForegroundCompat()
                 restartSource()
                 return START_STICKY
             }
