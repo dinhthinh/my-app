@@ -58,8 +58,8 @@ data class MockScenarioConfig(
     val navigating: Boolean = false,
     val speed: Int = 64,
     val speedLimit: Int = 60,
-    val speedMin: Int = 30,
-    val overspeed: Boolean = true,
+    val speedMin: Int = 0,
+    val overspeed: Boolean = false,
     val turn: Int = 2,
     val turnDistanceM: Int = 250,
     val roundaboutExit: Int = 0,
@@ -71,7 +71,6 @@ data class MockScenarioConfig(
     val avgPercent: Int = 45,
     val alerts: List<WazeAlert> = listOf(
         WazeAlert(type = 2, distanceM = 320),
-        WazeAlert(type = 9, distanceM = 150),
         WazeAlert(type = 6, distanceM = 500, jamSeverity = 3, jamDelayMin = 7),
     ),
 )

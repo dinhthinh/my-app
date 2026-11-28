@@ -4,7 +4,7 @@
     {
       "label": "start simulator",
       "type": "shell",
-      "command": "emulator -avd id6_pixel",
+      "command": "sed -i '' 's/^hw.keyboard = no$/hw.keyboard = yes/' ~/.android/avd/id6_pixel.avd/config.ini && emulator -avd id6_pixel",
       "isBackground": true,
       "presentation": {
         "reveal": "always",

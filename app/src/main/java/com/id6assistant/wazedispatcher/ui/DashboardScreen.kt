@@ -1,7 +1,6 @@
 package com.id6assistant.wazedispatcher.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,14 +18,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.Navigation
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.id6assistant.wazedispatcher.data.AlertCategory
 import com.id6assistant.wazedispatcher.data.MockSimulatorState
+import com.id6assistant.wazedispatcher.data.WazeAlert
 import com.id6assistant.wazedispatcher.data.WazeAlertCatalog
 import com.id6assistant.wazedispatcher.data.WazeSourceStatus
 import com.id6assistant.wazedispatcher.service.DispatcherUiState
@@ -138,25 +140,41 @@ fun DashboardScreen(
                 FilterChip(
                     selected = state.sourceMode == TelemetrySourceMode.LIVE_AIDL,
                     onClick = { onSelectMode(TelemetrySourceMode.LIVE_AIDL) },
-                    label = { Text("WazeMod AIDL") },
+                    label = { Text("WazeMod") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Navigation,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    },
                 )
                 FilterChip(
                     selected = state.sourceMode == TelemetrySourceMode.MOCK_SIMULATOR,
                     onClick = { onSelectMode(TelemetrySourceMode.MOCK_SIMULATOR) },
-                    label = { Text("Mock Simulator") },
+                    label = { Text("Mock") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Tune,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    },
                 )
                 Spacer(Modifier.weight(1f))
-                Button(
+                FilledIconButton(
                     onClick = onToggleRunning,
-                    colors = ButtonDefaults.buttonColors(
+                    modifier = Modifier.size(40.dp),
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = if (state.running) Color(0xFFDC2626) else Color(0xFF16A34A),
+                        contentColor = Color.White,
                     ),
                 ) {
                     Icon(
-                        imageVector = if (state.running) Icons.Default.Stop else Icons.Default.PlayArrow,
-                        contentDescription = null,
+                        imageVector = if (state.running) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
+                        contentDescription = if (state.running) "Dừng" else "Chạy",
                     )
-                    Text(if (state.running) "Dừng" else "Chạy")
                 }
             }
 
@@ -173,12 +191,46 @@ fun DashboardScreen(
 
             // Speed & Limit Card
             val snap = state.snapshot
+            val alertTypes = snap.alerts.map { it.type }.toSet()
+            val clearNoPassing = 10 in alertTypes || 25 in alertTypes
+            val baseRestrictions = snap.alerts
+                .filter { it.type in PROHIBITION_SIGN_TYPES && !(it.type == 9 && clearNoPassing) }
+                .distinctBy { it.type }
+            val turnRestrictions = if (
+                state.sourceMode == TelemetrySourceMode.MOCK_SIMULATOR &&
+                state.mockSimulator.noPassingSign &&
+                baseRestrictions.none { it.type == 9 }
+            ) {
+                (listOf(WazeAlert(type = 9, distanceM = 0)) + baseRestrictions).take(3)
+            } else {
+                baseRestrictions.take(3)
+            }
+
+            // Traffic Signs Card (Speed Limit, Min Speed, Prohibition Signs)
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1E293B), RoundedCornerShape(16.dp))
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                SpeedLimitSignCanvas(speedLimit = snap.speedLimit)
+                if (snap.speedMin > 0) {
+                    MinSpeedSignCanvas(speedMin = snap.speedMin)
+                }
+                turnRestrictions.forEach { alert ->
+                    TurnProhibitionSignCanvas(alertType = alert.type)
+                }
+            }
+
+            // Current Speed & Average Speed Zone Card (2 columns)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFF1E293B), RoundedCornerShape(16.dp))
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
@@ -197,60 +249,40 @@ fun DashboardScreen(
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
-                    if (snap.speedMin > 0) {
+                }
+
+                if (snap.avgZone) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text = "Vùng đo tốc độ TB",
+                                color = Color(0xFFFBBF24),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "${snap.avgPercent}%",
+                                color = Color(0xFFF8FAFC),
+                                fontSize = 12.sp,
+                            )
+                        }
+                        LinearProgressIndicator(
+                            progress = { (snap.avgPercent.coerceIn(0, 100)) / 100f },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color(0xFFF59E0B),
+                        )
                         Text(
-                            text = "Tối thiểu: ${snap.speedMin} km/h",
-                            color = Color(0xFF38BDF8),
-                            fontSize = 12.sp,
+                            text = "Còn ${snap.avgRemainingM} m · Khuyến nghị ${snap.avgRecommendedSpeed} km/h",
+                            color = Color(0xFFCBD5E1),
+                            fontSize = 11.sp,
                         )
                     }
-                }
-
-                // Speed Limit Circle
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(76.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .border(6.dp, Color(0xFFEF4444), CircleShape),
-                ) {
-                    Text(
-                        text = if (snap.speedLimit > 0) "${snap.speedLimit}" else "--",
-                        color = Color(0xFF0F172A),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                    )
-                }
-            }
-
-            // Average Speed Zone
-            if (snap.avgZone) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1E293B), RoundedCornerShape(16.dp))
-                        .padding(16.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Vùng đo tốc độ trung bình", color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
-                        Text("${snap.avgPercent}%", color = Color(0xFFF8FAFC))
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    LinearProgressIndicator(
-                        progress = { (snap.avgPercent.coerceIn(0, 100)) / 100f },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFF59E0B),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "Còn ${snap.avgRemainingM} m · Khuyến nghị ${snap.avgRecommendedSpeed} km/h",
-                        color = Color(0xFFCBD5E1),
-                        fontSize = 12.sp,
-                    )
                 }
             }
 
@@ -322,3 +354,9 @@ fun DashboardScreen(
         }
     }
 }
+
+private val PROHIBITION_SIGN_TYPES = setOf(
+    9,
+    28, 29, 30, 31, 39,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
+)
