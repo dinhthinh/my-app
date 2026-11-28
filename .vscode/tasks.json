@@ -13,6 +13,27 @@
       "problemMatcher": []
     },
     {
+      "label": "start android auto",
+      "type": "shell",
+      "command": "DHU=\"${ANDROID_HOME:-$HOME/Library/Android/sdk}/extras/google/auto/desktop-head-unit\"; if [ ! -x \"$DHU\" ]; then echo 'Desktop Head Unit chua duoc cai. Chay task \"install android auto dhu\" truoc.'; exit 1; fi; adb forward tcp:5277 tcp:5277 && \"$DHU\"",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install android auto dhu",
+      "type": "shell",
+      "command": "\"${ANDROID_HOME:-$HOME/Library/Android/sdk}/cmdline-tools/latest/bin/sdkmanager\" \"extras;google;auto\"",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "start-dev",
       "type": "shell",
       "command": "./gradlew installDebug && adb shell am force-stop com.id6assistant.wazedispatcher && adb shell am start -n com.id6assistant.wazedispatcher/.MainActivity",

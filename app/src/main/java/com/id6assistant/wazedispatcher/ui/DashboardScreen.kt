@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.id6assistant.wazedispatcher.data.AlertCategory
 import com.id6assistant.wazedispatcher.data.MockSimulatorState
-import com.id6assistant.wazedispatcher.data.WazeAlert
+import com.id6assistant.wazedispatcher.data.ProhibitionSignFilter
 import com.id6assistant.wazedispatcher.data.WazeAlertCatalog
 import com.id6assistant.wazedispatcher.data.WazeSourceStatus
 import com.id6assistant.wazedispatcher.service.DispatcherUiState
@@ -191,20 +191,11 @@ fun DashboardScreen(
 
             // Speed & Limit Card
             val snap = state.snapshot
-            val alertTypes = snap.alerts.map { it.type }.toSet()
-            val clearNoPassing = 10 in alertTypes || 25 in alertTypes
-            val baseRestrictions = snap.alerts
-                .filter { it.type in PROHIBITION_SIGN_TYPES && !(it.type == 9 && clearNoPassing) }
-                .distinctBy { it.type }
-            val turnRestrictions = if (
-                state.sourceMode == TelemetrySourceMode.MOCK_SIMULATOR &&
-                state.mockSimulator.noPassingSign &&
-                baseRestrictions.none { it.type == 9 }
-            ) {
-                (listOf(WazeAlert(type = 9, distanceM = 0)) + baseRestrictions).take(3)
-            } else {
-                baseRestrictions.take(3)
-            }
+            val turnRestrictions = ProhibitionSignFilter.extractProhibitionAlerts(
+                alerts = snap.alerts,
+                includeMockNoPassing = state.sourceMode == TelemetrySourceMode.MOCK_SIMULATOR &&
+                    state.mockSimulator.noPassingSign,
+            )
 
             // Traffic Signs Card (Speed Limit, Min Speed, Prohibition Signs)
             FlowRow(
@@ -354,9 +345,3 @@ fun DashboardScreen(
         }
     }
 }
-
-private val PROHIBITION_SIGN_TYPES = setOf(
-    9,
-    28, 29, 30, 31, 39,
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
-)
